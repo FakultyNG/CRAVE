@@ -5,6 +5,16 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   poweredByHeader: false,
+  productionBrowserSourceMaps: false,
+  enablePrerenderSourceMaps: false,
+  experimental: {
+    cpus: 1,
+    memoryBasedWorkersCount: false,
+    serverSourceMaps: false,
+    staticGenerationMaxConcurrency: 1,
+    staticGenerationMinPagesPerWorker: 75,
+    turbopackGc: true,
+  },
   async headers() {
     const contentSecurityPolicy = [
       "default-src 'self'",

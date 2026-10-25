@@ -32,3 +32,5 @@ Before each production promotion, manually test widths 320, 375, 768, 1024, and 
 ## Performance review
 
 Next Image supplies responsive image variants and lazy-loading, local variable fonts avoid third-party font requests, immutable framework assets use hashed caching, and Railway runs the traced standalone output. Catalogue media should continue to be uploaded in WebP/AVIF where practical; video should include posters and should not autoplay with sound.
+
+Railway builds use a single Next.js worker, serialized static generation, Turbopack garbage collection, and disabled production source maps. This trades some build speed for predictable memory consumption on constrained builders without changing request-time behavior.
