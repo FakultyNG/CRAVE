@@ -7,6 +7,7 @@ import { randomToken } from "@/lib/auth/crypto";
 import { validateCoupon } from "@/lib/growth/coupons";
 import { promotionalCreditBalance } from "@/lib/growth/credits";
 import { completeCreditFundedOrder } from "@/lib/commerce/orders";
+import { appOrigin } from "@/lib/app-url";
 
 const schema = z.object({
   fulfillmentType: z.enum(["DELIVERY", "PICKUP"]), deliveryZoneSlug: z.string().optional(),
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
       }, include: { payments: true },
       });
     }, { isolationLevel: "Serializable" });
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin;
+    const appUrl = appOrigin(new URL(request.url).origin);
     if (totalKobo === 0) { await completeCreditFundedOrder(order.id, order.payments[0].id); return Response.json({ orderId: order.id, orderNumber: order.orderNumber, reference: internalReference, checkoutUrl: `${appUrl}/checkout/result?reference=${encodeURIComponent(internalReference)}` }); }
     try {
       const result = await createCheckout({ reference: internalReference, amountKobo: totalKobo, currency: "NGN", description: `Crave order ${order.orderNumber}`, customerName: input.customerName, customerEmail: input.customerEmail, callbackUrl: `${appUrl}/api/v1/payments/webhooks/strowallet`, successUrl: `${appUrl}/checkout/result?reference=${encodeURIComponent(internalReference)}`, cancelUrl: `${appUrl}/cart` });

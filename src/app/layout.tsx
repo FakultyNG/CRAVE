@@ -5,9 +5,10 @@ import "./globals.css";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { SessionKeeper } from "@/components/session-keeper";
 import { CartProvider } from "@/components/cart-provider";
+import { appOrigin } from "@/lib/app-url";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(appOrigin()),
   title: { default: "Crave — Irresistible cravings, made modern", template: "%s · Crave" },
   description: "Premium food and drinks, prepared in Lagos and made for your next craving.",
   applicationName: "Crave",
