@@ -8,8 +8,6 @@ import { FavouriteButton } from "@/components/favourite-button";
 import type { CatalogProduct } from "@/lib/catalog";
 import { getDb } from "@/lib/db";
 
-export const instant = false;
-
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const record = await getDb().product.findUnique({ where: { slug }, include: { variants: { where: { isActive: true }, orderBy: { position: "asc" } }, options: { orderBy: { position: "asc" } }, media: { orderBy: { position: "asc" } } } });

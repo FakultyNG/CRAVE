@@ -13,8 +13,6 @@ const cravings = [
   { index: "04", slug: "parfaits", name: "Parfaits", note: "Creamy · crunchy · just right", price: "₦3,000", image: "/products/parfaits.png" },
 ];
 
-export const instant = false;
-
 export default async function Home() {
   await connection();
   const campaigns = await activeCampaigns();

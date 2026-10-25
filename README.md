@@ -31,7 +31,7 @@ The foundation includes:
 
 ## Local setup
 
-1. Install Node.js 24+ and pnpm 11.
+1. Install Node.js 22 LTS and pnpm 11.
 2. Copy `.env.example` to `.env` and replace every secret.
 3. Create a PostgreSQL database and set `DATABASE_URL`.
 4. Run `pnpm install`.

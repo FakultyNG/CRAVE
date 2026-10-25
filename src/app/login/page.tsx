@@ -6,8 +6,6 @@ import { BrandLogo } from "@/components/brand-logo";
 import { getSession } from "@/lib/auth/session";
 
 export const metadata = { title: "Sign in" };
-export const instant = false;
-
 export default async function LoginPage() {
   if (await getSession()) redirect("/account");
   return <main className="grid min-h-svh lg:grid-cols-[.9fr_1.1fr]">
