@@ -1,0 +1,9 @@
+import { connection } from "next/server";
+import { z } from "zod";
+import { apiPermission } from "@/lib/auth/api";
+import { getDb } from "@/lib/db";
+import { handleApiError, jsonError } from "@/lib/api";
+
+const schema = z.object({ name: z.string().trim().min(2).max(100), unit: z.string().trim().min(1).max(20), quantity: z.number(), reorderLevel: z.number().min(0), averageUnitKobo: z.number().int().min(0) });
+export async function GET() { await connection(); try { const auth = await apiPermission("inventory.read"); if ("response" in auth) return auth.response; const items = await getDb().inventoryItem.findMany({ include: { location: true, supplier: true }, orderBy: { name: "asc" } }); return Response.json({ items: items.map((item) => ({ ...item, quantityOnHand: item.quantityOnHand.toString(), reorderLevel: item.reorderLevel.toString() })) }); } catch (error) { return handleApiError(error); } }
+export async function POST(request: Request) { try { const auth = await apiPermission("inventory.manage"); if ("response" in auth) return auth.response; const input = schema.parse(await request.json()); const db = getDb(); const location = await db.location.findFirst({ where: { status: "ACTIVE" } }); if (!location) return jsonError("No active location.", 409); const item = await db.$transaction(async (tx) => { const created = await tx.inventoryItem.create({ data: { locationId: location.id, name: input.name, unit: input.unit, quantityOnHand: input.quantity, reorderLevel: input.reorderLevel, averageUnitKobo: input.averageUnitKobo } }); if (input.quantity) await tx.stockMovement.create({ data: { inventoryId: created.id, actorUserId: auth.session.user.id, type: "RECEIPT", quantity: input.quantity, unitCostKobo: input.averageUnitKobo, note: "Opening stock" } }); return created; }); return Response.json({ item }, { status: 201 }); } catch (error) { return handleApiError(error); } }

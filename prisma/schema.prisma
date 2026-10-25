@@ -1,0 +1,1430 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum OtpChannel {
+  SMS
+  WHATSAPP
+}
+
+enum OtpPurpose {
+  REGISTRATION
+  PIN_RESET
+}
+
+enum StaffStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+}
+
+enum LocationStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  UNAVAILABLE
+  ARCHIVED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum AuditOutcome {
+  SUCCESS
+  FAILURE
+}
+
+enum CartStatus {
+  ACTIVE
+  CONVERTED
+  ABANDONED
+}
+
+enum FulfillmentType {
+  DELIVERY
+  PICKUP
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAYMENT_CONFIRMED
+  ACCEPTED
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
+  READY_FOR_PICKUP
+  DELIVERED
+  COLLECTED
+  CANCELLED
+  PAYMENT_FAILED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  INITIALIZED
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentProvider {
+  STROWALLET
+  MOCK
+}
+
+enum StockMovementType {
+  RECEIPT
+  CONSUMPTION
+  ADJUSTMENT
+  WASTE
+}
+
+enum OwnerLedgerEntryType {
+  CREDIT
+  DEBIT
+  ADJUSTMENT
+}
+
+enum StaffWalletEntryType {
+  SALARY
+  BONUS
+  ADJUSTMENT
+  WITHDRAWAL
+  REVERSAL
+}
+
+enum SalaryFundingSource {
+  PREFUNDED_CAPITAL
+  GROSS_REVENUE
+}
+
+enum CouponDiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+enum PromotionalCreditEntryType {
+  CREDIT
+  SPEND
+  REVERSAL
+  EXPIRED
+  ADJUSTMENT
+}
+
+enum CreditReservationStatus {
+  RESERVED
+  CONSUMED
+  RELEASED
+}
+
+enum ReferralStatus {
+  PENDING
+  QUALIFIED
+  REWARDED
+  DISQUALIFIED
+}
+
+enum WithdrawalStatus {
+  DRAFT
+  REQUESTED
+  PENDING_APPROVAL
+  APPROVED
+  PROCESSING
+  PAID
+  REJECTED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum AccountingAccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  CONTRA_REVENUE
+  EXPENSE
+}
+
+enum JournalEntryStatus {
+  POSTED
+  REVERSED
+}
+
+enum FinancialPeriodStatus {
+  DRAFT
+  REVIEW
+  APPROVED
+  CLOSED
+}
+
+enum ExpenseApprovalStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  POSTED
+  VOID
+}
+
+enum ExpensePaymentStatus {
+  UNPAID
+  PAID
+}
+
+enum ExpenseRecurrence {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum SettlementStatus {
+  PENDING
+  SETTLED
+  FAILED
+  REVERSED
+}
+
+enum RefundStatus {
+  REQUESTED
+  APPROVED
+  PROCESSING
+  PAID
+  REJECTED
+  FAILED
+}
+
+enum ProfitCalculationStatus {
+  CALCULATED
+  APPROVED
+  REJECTED
+  POSTED
+  REVERSED
+}
+
+enum OwnershipAllocationPolicy {
+  PERIOD_END
+  WEIGHTED_DAILY
+}
+
+enum ProfitAllocationStatus {
+  PENDING
+  POSTED
+  HELD
+  REVERSED
+}
+
+model User {
+  id                       String                         @id @default(cuid())
+  preferredName            String
+  phone                    String                         @unique
+  email                    String?
+  phoneVerifiedAt          DateTime?
+  pinHash                  String?
+  status                   UserStatus                     @default(ACTIVE)
+  failedPinAttempts        Int                            @default(0)
+  pinLockedUntil           DateTime?
+  lastLoginAt              DateTime?
+  createdAt                DateTime                       @default(now())
+  updatedAt                DateTime                       @updatedAt
+  deletedAt                DateTime?
+  sessions                 Session[]
+  staffProfile             StaffProfile?
+  userPermissions          UserPermission[]
+  auditLogs                AuditLog[]                     @relation("AuditActor")
+  notifications            Notification[]
+  addresses                Address[]
+  carts                    Cart[]
+  orders                   Order[]
+  favourites               Favourite[]
+  ownerProfile             OwnerProfile?
+  withdrawalApprovals      WithdrawalApproval[]           @relation("WithdrawalApprover")
+  staffWithdrawalApprovals StaffWithdrawalApproval[]      @relation("StaffWithdrawalApprover")
+  stockMovements           StockMovement[]                @relation("StockMovementActor")
+  referralCode             String?                        @unique
+  referredById             String?
+  referredBy               User?                          @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referredUsers            User[]                         @relation("UserReferrals")
+  referralsMade            Referral[]                     @relation("ReferralReferrer")
+  referralReceived         Referral?                      @relation("ReferralReferred")
+  promotionalCredits       PromotionalCreditEntry[]
+  creditReservations       PromotionalCreditReservation[]
+  couponRedemptions        CouponRedemption[]
+  createdExpenses          Expense[]                      @relation("ExpenseCreator")
+  approvedExpenses         Expense[]                      @relation("ExpenseApprover")
+  accountingEntries        JournalEntry[]                 @relation("JournalCreator")
+  submittedPeriods         FinancialPeriod[]              @relation("PeriodSubmitter")
+  approvedPeriods          FinancialPeriod[]              @relation("PeriodApprover")
+  closedPeriods            FinancialPeriod[]              @relation("PeriodCloser")
+  requestedRefunds         Refund[]                       @relation("RefundRequester")
+  approvedRefunds          Refund[]                       @relation("RefundApprover")
+  ownershipChanges         OwnershipRecord[]              @relation("OwnershipChangeActor")
+  profitCalculations       ProfitCalculation[]            @relation("ProfitCalculator")
+  profitApprovals          ProfitApproval[]               @relation("ProfitApprover")
+
+  @@index([status])
+}
+
+model Session {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  lastSeenAt DateTime  @default(now())
+  revokedAt  DateTime?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+}
+
+model OtpChallenge {
+  id            String     @id @default(cuid())
+  phone         String
+  preferredName String?
+  channel       OtpChannel
+  purpose       OtpPurpose
+  otpHash       String
+  attempts      Int        @default(0)
+  maxAttempts   Int        @default(5)
+  expiresAt     DateTime
+  verifiedAt    DateTime?
+  consumedAt    DateTime?
+  requestIp     String?
+  createdAt     DateTime   @default(now())
+
+  @@index([phone, purpose, createdAt])
+  @@index([requestIp, createdAt])
+  @@index([expiresAt])
+}
+
+model Role {
+  id                 String           @id @default(cuid())
+  name               String           @unique
+  description        String?
+  isSystem           Boolean          @default(false)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  staff              StaffProfile[]
+  permissions        RolePermission[]
+  invitations        Invitation[]
+  couponRestrictions CouponLocation[]
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  description String?
+  roles       RolePermission[]
+  users       UserPermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model UserPermission {
+  userId       String
+  permissionId String
+  granted      Boolean    @default(true)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, permissionId])
+}
+
+model StaffProfile {
+  id             String                   @id @default(cuid())
+  userId         String                   @unique
+  roleId         String
+  locationId     String?
+  status         StaffStatus              @default(INVITED)
+  salaryKobo     Int
+  nextSalaryAt   DateTime
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  user           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           Role                     @relation(fields: [roleId], references: [id])
+  location       Location?                @relation(fields: [locationId], references: [id])
+  acceptedOrders FulfillmentRecord[]      @relation("OrderAcceptor")
+  assignedOrders FulfillmentRecord[]      @relation("OrderAssignee")
+  walletEntries  StaffWalletEntry[]
+  withdrawals    StaffWithdrawalRequest[]
+}
+
+model Invitation {
+  id         String    @id @default(cuid())
+  phone      String
+  roleId     String
+  locationId String?
+  salaryKobo Int
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  createdAt  DateTime  @default(now())
+  role       Role      @relation(fields: [roleId], references: [id])
+  location   Location? @relation(fields: [locationId], references: [id])
+
+  @@index([phone, expiresAt])
+}
+
+model Location {
+  id              String                @id @default(cuid())
+  name            String
+  slug            String                @unique
+  city            String
+  timezone        String                @default("Africa/Lagos")
+  status          LocationStatus        @default(DRAFT)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  staff           StaffProfile[]
+  products        ProductAvailability[]
+  costs           ProductCost[]
+  zones           DeliveryZone[]
+  orders          Order[]
+  inventory       InventoryItem[]
+  suppliers       Supplier[]
+  invitations     Invitation[]
+  couponLocations CouponLocation[]
+  journalLines    JournalLine[]
+  expenses        Expense[]
+  settlements     PaymentSettlement[]
+}
+
+model Category {
+  id                 String           @id @default(cuid())
+  name               String
+  slug               String           @unique
+  position           Int              @default(0)
+  isActive           Boolean          @default(true)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  products           Product[]
+  couponRestrictions CouponCategory[]
+}
+
+model Product {
+  id                 String                @id @default(cuid())
+  categoryId         String
+  name               String
+  slug               String                @unique
+  description        String
+  basePriceKobo      Int
+  status             ProductStatus         @default(DRAFT)
+  isFeatured         Boolean               @default(false)
+  preparationMins    Int?
+  allergens          String[]
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  archivedAt         DateTime?
+  category           Category              @relation(fields: [categoryId], references: [id])
+  variants           ProductVariant[]
+  options            ProductOption[]
+  media              ProductMedia[]
+  availability       ProductAvailability[]
+  costs              ProductCost[]
+  cartItems          CartItem[]
+  orderItems         OrderItem[]
+  favourites         Favourite[]
+  inventoryLinks     ProductInventory[]
+  couponRestrictions CouponProduct[]
+
+  @@index([categoryId, status])
+}
+
+model ProductVariant {
+  id             String     @id @default(cuid())
+  productId      String
+  name           String
+  sku            String?    @unique
+  priceDeltaKobo Int        @default(0)
+  isActive       Boolean    @default(true)
+  position       Int        @default(0)
+  product        Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartItems      CartItem[]
+
+  @@index([productId, isActive])
+}
+
+model ProductOption {
+  id             String           @id @default(cuid())
+  productId      String
+  name           String
+  groupName      String           @default("Extras")
+  priceDeltaKobo Int              @default(0)
+  isRequired     Boolean          @default(false)
+  maxSelections  Int              @default(1)
+  position       Int              @default(0)
+  product        Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartSelections CartItemOption[]
+}
+
+model ProductMedia {
+  id        String    @id @default(cuid())
+  productId String
+  type      MediaType
+  url       String
+  posterUrl String?
+  altText   String
+  position  Int       @default(0)
+  isCover   Boolean   @default(false)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ProductAvailability {
+  productId   String
+  locationId  String
+  isAvailable Boolean   @default(true)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  location    Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@id([productId, locationId])
+}
+
+model ProductCost {
+  id            String    @id @default(cuid())
+  productId     String
+  locationId    String
+  costKobo      Int
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  product       Product   @relation(fields: [productId], references: [id])
+  location      Location  @relation(fields: [locationId], references: [id])
+
+  @@index([productId, locationId, effectiveFrom])
+}
+
+model Address {
+  id            String   @id @default(cuid())
+  userId        String
+  label         String
+  recipientName String
+  phone         String
+  line1         String
+  area          String
+  city          String   @default("Lagos")
+  landmark      String?
+  instructions  String?
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isDefault])
+}
+
+model DeliveryZone {
+  id               String   @id @default(cuid())
+  locationId       String
+  name             String
+  slug             String   @unique
+  feeKobo          Int
+  minimumOrderKobo Int      @default(0)
+  estimatedMinutes Int
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  location         Location @relation(fields: [locationId], references: [id])
+  orders           Order[]
+
+  @@index([locationId, isActive])
+}
+
+model Cart {
+  id             String     @id @default(cuid())
+  userId         String?
+  guestTokenHash String?
+  status         CartStatus @default(ACTIVE)
+  expiresAt      DateTime
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  user           User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items          CartItem[]
+  order          Order?
+
+  @@index([userId, status])
+  @@index([guestTokenHash, status])
+  @@index([expiresAt])
+}
+
+model CartItem {
+  id        String           @id @default(cuid())
+  cartId    String
+  productId String
+  variantId String?
+  quantity  Int
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  cart      Cart             @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product          @relation(fields: [productId], references: [id])
+  variant   ProductVariant?  @relation(fields: [variantId], references: [id])
+  options   CartItemOption[]
+
+  @@index([cartId])
+}
+
+model CartItemOption {
+  cartItemId String
+  optionId   String
+  cartItem   CartItem      @relation(fields: [cartItemId], references: [id], onDelete: Cascade)
+  option     ProductOption @relation(fields: [optionId], references: [id])
+
+  @@id([cartItemId, optionId])
+}
+
+model Order {
+  id                    String                        @id @default(cuid())
+  orderNumber           String                        @unique
+  userId                String?
+  guestTokenHash        String?
+  cartId                String?                       @unique
+  locationId            String
+  deliveryZoneId        String?
+  status                OrderStatus                   @default(PENDING_PAYMENT)
+  fulfillmentType       FulfillmentType
+  customerName          String
+  customerPhone         String
+  customerEmail         String
+  deliveryAddress       Json?
+  deliveryInstructions  String?
+  subtotalKobo          Int
+  discountKobo          Int                           @default(0)
+  couponId              String?
+  couponCode            String?
+  couponDiscountKobo    Int                           @default(0)
+  promotionalCreditKobo Int                           @default(0)
+  deliveryFeeKobo       Int                           @default(0)
+  totalKobo             Int
+  currency              String                        @default("NGN")
+  estimatedReadyAt      DateTime?
+  paidAt                DateTime?
+  createdAt             DateTime                      @default(now())
+  updatedAt             DateTime                      @updatedAt
+  user                  User?                         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  cart                  Cart?                         @relation(fields: [cartId], references: [id], onDelete: SetNull)
+  location              Location                      @relation(fields: [locationId], references: [id])
+  deliveryZone          DeliveryZone?                 @relation(fields: [deliveryZoneId], references: [id])
+  items                 OrderItem[]
+  history               OrderStatusHistory[]
+  payments              PaymentIntent[]
+  fulfillment           FulfillmentRecord?
+  coupon                Coupon?                       @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  couponRedemption      CouponRedemption?
+  creditReservation     PromotionalCreditReservation?
+  qualifyingReferral    Referral?                     @relation("ReferralQualifyingOrder")
+  journalLines          JournalLine[]
+  refunds               Refund[]
+
+  @@index([userId, createdAt])
+  @@index([guestTokenHash, createdAt])
+  @@index([status, createdAt])
+}
+
+model OrderItem {
+  id                 String            @id @default(cuid())
+  orderId            String
+  productId          String
+  productName        String
+  variantName        String?
+  quantity           Int
+  unitPriceKobo      Int
+  productionCostKobo Int
+  lineTotalKobo      Int
+  order              Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product            Product           @relation(fields: [productId], references: [id])
+  options            OrderItemOption[]
+}
+
+model OrderItemOption {
+  id             String    @id @default(cuid())
+  orderItemId    String
+  optionName     String
+  priceDeltaKobo Int
+  orderItem      OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  status    OrderStatus
+  note      String?
+  createdAt DateTime    @default(now())
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+}
+
+model PaymentIntent {
+  id                String              @id @default(cuid())
+  orderId           String
+  provider          PaymentProvider
+  providerReference String              @unique
+  merchantReference String              @unique
+  idempotencyKey    String              @unique
+  status            PaymentStatus       @default(INITIALIZED)
+  amountKobo        Int
+  currency          String              @default("NGN")
+  checkoutUrl       String?
+  providerResponse  Json?
+  verifiedAt        DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  order             Order               @relation(fields: [orderId], references: [id])
+  events            PaymentEvent[]
+  settlements       PaymentSettlement[]
+  refunds           Refund[]
+
+  @@index([orderId, status])
+}
+
+model PaymentEvent {
+  id              String        @id @default(cuid())
+  paymentIntentId String
+  type            String
+  payload         Json
+  createdAt       DateTime      @default(now())
+  paymentIntent   PaymentIntent @relation(fields: [paymentIntentId], references: [id], onDelete: Cascade)
+}
+
+model ProviderWebhook {
+  id          String    @id @default(cuid())
+  provider    String
+  payloadHash String    @unique
+  payload     Json
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model FulfillmentRecord {
+  id            String        @id @default(cuid())
+  orderId       String        @unique
+  acceptedById  String?
+  assignedToId  String?
+  dispatchName  String?
+  dispatchPhone String?
+  kitchenNote   String?
+  acceptedAt    DateTime?
+  preparationAt DateTime?
+  readyAt       DateTime?
+  dispatchedAt  DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  acceptedBy    StaffProfile? @relation("OrderAcceptor", fields: [acceptedById], references: [id])
+  assignedTo    StaffProfile? @relation("OrderAssignee", fields: [assignedToId], references: [id])
+}
+
+model Supplier {
+  id         String          @id @default(cuid())
+  locationId String
+  name       String
+  phone      String?
+  email      String?
+  isActive   Boolean         @default(true)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  location   Location        @relation(fields: [locationId], references: [id])
+  inventory  InventoryItem[]
+  expenses   Expense[]
+}
+
+model InventoryItem {
+  id              String             @id @default(cuid())
+  locationId      String
+  supplierId      String?
+  name            String
+  unit            String
+  quantityOnHand  Decimal            @db.Decimal(14, 3)
+  reorderLevel    Decimal            @db.Decimal(14, 3)
+  averageUnitKobo Int
+  isActive        Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  location        Location           @relation(fields: [locationId], references: [id])
+  supplier        Supplier?          @relation(fields: [supplierId], references: [id])
+  products        ProductInventory[]
+  movements       StockMovement[]
+
+  @@unique([locationId, name])
+  @@index([locationId, isActive])
+}
+
+model ProductInventory {
+  productId       String
+  inventoryId     String
+  quantityPerUnit Decimal       @db.Decimal(14, 3)
+  product         Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  inventory       InventoryItem @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+
+  @@id([productId, inventoryId])
+}
+
+model StockMovement {
+  id           String            @id @default(cuid())
+  inventoryId  String
+  actorUserId  String?
+  type         StockMovementType
+  quantity     Decimal           @db.Decimal(14, 3)
+  unitCostKobo Int?
+  reference    String?
+  note         String?
+  createdAt    DateTime          @default(now())
+  inventory    InventoryItem     @relation(fields: [inventoryId], references: [id])
+  actor        User?             @relation("StockMovementActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([inventoryId, createdAt])
+}
+
+model OwnerProfile {
+  id                     String              @id @default(cuid())
+  userId                 String              @unique
+  isActive               Boolean             @default(true)
+  notes                  String?
+  bankCode               String?
+  bankName               String?
+  accountNumberEncrypted String?
+  accountNumberLast4     String?
+  accountName            String?
+  nameEnquiryReference   String?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  user                   User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ledgerEntries          OwnerLedgerEntry[]
+  withdrawals            WithdrawalRequest[]
+  ownershipRecords       OwnershipRecord[]
+  profitAllocations      ProfitAllocation[]
+}
+
+model OwnershipRecord {
+  id            String       @id @default(cuid())
+  ownerId       String
+  percentageBps Int
+  effectiveAt   DateTime
+  notes         String?
+  createdById   String
+  createdAt     DateTime     @default(now())
+  owner         OwnerProfile @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdBy     User         @relation("OwnershipChangeActor", fields: [createdById], references: [id])
+
+  @@unique([ownerId, effectiveAt])
+  @@index([effectiveAt])
+}
+
+model OwnerLedgerEntry {
+  id          String               @id @default(cuid())
+  ownerId     String
+  type        OwnerLedgerEntryType
+  amountKobo  Int
+  description String
+  sourceType  String
+  sourceId    String
+  createdAt   DateTime             @default(now())
+  owner       OwnerProfile         @relation(fields: [ownerId], references: [id])
+
+  @@unique([sourceType, sourceId, type])
+  @@index([ownerId, createdAt])
+}
+
+model WithdrawalRequest {
+  id                     String               @id @default(cuid())
+  ownerId                String
+  status                 WithdrawalStatus     @default(REQUESTED)
+  amountKobo             Int
+  currency               String               @default("NGN")
+  bankCode               String
+  bankName               String
+  accountNumberEncrypted String
+  accountNumberLast4     String
+  accountName            String
+  nameEnquiryReference   String
+  merchantReference      String?              @unique
+  providerSessionId      String?              @unique
+  providerResponse       Json?
+  requestedAt            DateTime             @default(now())
+  approvedAt             DateTime?
+  processingAt           DateTime?
+  paidAt                 DateTime?
+  rejectedAt             DateTime?
+  failureReason          String?
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  owner                  OwnerProfile         @relation(fields: [ownerId], references: [id])
+  approvals              WithdrawalApproval[]
+  events                 WithdrawalEvent[]
+
+  @@index([ownerId, status])
+  @@index([status, requestedAt])
+}
+
+model WithdrawalApproval {
+  id             String            @id @default(cuid())
+  withdrawalId   String
+  approverUserId String
+  approved       Boolean
+  note           String?
+  createdAt      DateTime          @default(now())
+  withdrawal     WithdrawalRequest @relation(fields: [withdrawalId], references: [id], onDelete: Cascade)
+  approver       User              @relation("WithdrawalApprover", fields: [approverUserId], references: [id])
+
+  @@unique([withdrawalId, approverUserId])
+}
+
+model WithdrawalEvent {
+  id           String            @id @default(cuid())
+  withdrawalId String
+  type         String
+  payload      Json
+  createdAt    DateTime          @default(now())
+  withdrawal   WithdrawalRequest @relation(fields: [withdrawalId], references: [id], onDelete: Cascade)
+
+  @@index([withdrawalId, createdAt])
+}
+
+model StaffWalletEntry {
+  id            String               @id @default(cuid())
+  staffId       String
+  type          StaffWalletEntryType
+  amountKobo    Int
+  fundingSource SalaryFundingSource?
+  description   String
+  memo          String
+  sourceType    String
+  sourceId      String
+  createdAt     DateTime             @default(now())
+  staff         StaffProfile         @relation(fields: [staffId], references: [id])
+
+  @@unique([sourceType, sourceId, type])
+  @@index([staffId, createdAt])
+}
+
+model GrossRevenueLedgerEntry {
+  id          String   @id @default(cuid())
+  amountKobo  Int
+  description String
+  sourceType  String
+  sourceId    String
+  createdAt   DateTime @default(now())
+
+  @@unique([sourceType, sourceId])
+  @@index([createdAt])
+}
+
+model StaffWithdrawalRequest {
+  id                     String                    @id @default(cuid())
+  staffId                String
+  status                 WithdrawalStatus          @default(REQUESTED)
+  amountKobo             Int
+  currency               String                    @default("NGN")
+  bankCode               String
+  bankName               String
+  accountNumberEncrypted String
+  accountNumberLast4     String
+  accountName            String
+  nameEnquiryReference   String
+  merchantReference      String?                   @unique
+  providerSessionId      String?                   @unique
+  providerResponse       Json?
+  requestedAt            DateTime                  @default(now())
+  approvedAt             DateTime?
+  processingAt           DateTime?
+  paidAt                 DateTime?
+  rejectedAt             DateTime?
+  failureReason          String?
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @updatedAt
+  staff                  StaffProfile              @relation(fields: [staffId], references: [id])
+  approvals              StaffWithdrawalApproval[]
+  events                 StaffWithdrawalEvent[]
+
+  @@index([staffId, status])
+  @@index([status, requestedAt])
+}
+
+model StaffWithdrawalApproval {
+  id             String                 @id @default(cuid())
+  withdrawalId   String
+  approverUserId String
+  approved       Boolean
+  note           String?
+  createdAt      DateTime               @default(now())
+  withdrawal     StaffWithdrawalRequest @relation(fields: [withdrawalId], references: [id], onDelete: Cascade)
+  approver       User                   @relation("StaffWithdrawalApprover", fields: [approverUserId], references: [id])
+
+  @@unique([withdrawalId, approverUserId])
+}
+
+model StaffWithdrawalEvent {
+  id           String                 @id @default(cuid())
+  withdrawalId String
+  type         String
+  payload      Json
+  createdAt    DateTime               @default(now())
+  withdrawal   StaffWithdrawalRequest @relation(fields: [withdrawalId], references: [id], onDelete: Cascade)
+
+  @@index([withdrawalId, createdAt])
+}
+
+model Coupon {
+  id                   String             @id @default(cuid())
+  code                 String             @unique
+  name                 String
+  description          String?
+  discountType         CouponDiscountType
+  value                Int
+  minimumOrderKobo     Int                @default(0)
+  maximumDiscountKobo  Int?
+  validFrom            DateTime
+  validUntil           DateTime?
+  maximumRedemptions   Int?
+  maximumPerCustomer   Int                @default(1)
+  firstOrderOnly       Boolean            @default(false)
+  combinableWithCredit Boolean            @default(false)
+  isActive             Boolean            @default(true)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  orders               Order[]
+  redemptions          CouponRedemption[]
+  products             CouponProduct[]
+  categories           CouponCategory[]
+  locations            CouponLocation[]
+
+  @@index([isActive, validFrom, validUntil])
+}
+
+model CouponProduct {
+  couponId  String
+  productId String
+  coupon    Coupon  @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([couponId, productId])
+}
+
+model CouponCategory {
+  couponId   String
+  categoryId String
+  coupon     Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([couponId, categoryId])
+}
+
+model CouponLocation {
+  couponId   String
+  locationId String
+  coupon     Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  role       Role?    @relation(fields: [roleId], references: [id])
+  roleId     String?
+
+  @@id([couponId, locationId])
+}
+
+model CouponRedemption {
+  id           String   @id @default(cuid())
+  couponId     String
+  userId       String?
+  orderId      String   @unique
+  discountKobo Int
+  createdAt    DateTime @default(now())
+  coupon       Coupon   @relation(fields: [couponId], references: [id])
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([couponId, userId])
+}
+
+model PromotionalCreditEntry {
+  id          String                     @id @default(cuid())
+  userId      String
+  type        PromotionalCreditEntryType
+  amountKobo  Int
+  description String
+  sourceType  String
+  sourceId    String
+  expiresAt   DateTime?
+  createdAt   DateTime                   @default(now())
+  user        User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceType, sourceId, type])
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+}
+
+model PromotionalCreditReservation {
+  id         String                  @id @default(cuid())
+  userId     String
+  orderId    String                  @unique
+  amountKobo Int
+  status     CreditReservationStatus @default(RESERVED)
+  createdAt  DateTime                @default(now())
+  updatedAt  DateTime                @updatedAt
+  user       User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order      Order                   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+}
+
+model Referral {
+  id                     String         @id @default(cuid())
+  referrerId             String
+  referredUserId         String         @unique
+  qualifyingOrderId      String?        @unique
+  status                 ReferralStatus @default(PENDING)
+  qualifiedAt            DateTime?
+  rewardEligibleAt       DateTime?
+  rewardedAt             DateTime?
+  disqualifiedAt         DateTime?
+  disqualificationReason String?
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+  referrer               User           @relation("ReferralReferrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referredUser           User           @relation("ReferralReferred", fields: [referredUserId], references: [id], onDelete: Cascade)
+  qualifyingOrder        Order?         @relation("ReferralQualifyingOrder", fields: [qualifyingOrderId], references: [id], onDelete: SetNull)
+
+  @@index([referrerId, status])
+  @@index([status, rewardEligibleAt])
+}
+
+model ReferralProgramConfig {
+  id                    String   @id @default("default")
+  referrerRewardKobo    Int      @default(50000)
+  referredRewardKobo    Int      @default(50000)
+  minimumOrderKobo      Int      @default(500000)
+  verificationDelayDays Int      @default(0)
+  creditExpiryDays      Int?
+  isActive              Boolean  @default(true)
+  updatedAt             DateTime @updatedAt
+}
+
+model Campaign {
+  id             String    @id @default(cuid())
+  name           String
+  headline       String
+  body           String?
+  callToAction   String?
+  destinationUrl String?
+  startsAt       DateTime
+  endsAt         DateTime?
+  isActive       Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([isActive, startsAt, endsAt])
+}
+
+model Favourite {
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([userId, productId])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id          String       @id @default(cuid())
+  actorUserId String?
+  action      String
+  entityType  String
+  entityId    String?
+  outcome     AuditOutcome @default(SUCCESS)
+  metadata    Json?
+  ipAddress   String?
+  createdAt   DateTime     @default(now())
+  actor       User?        @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([actorUserId, createdAt])
+  @@index([entityType, entityId])
+}
+
+model AccountingAccount {
+  id          String                @id @default(cuid())
+  code        String                @unique
+  systemKey   String                @unique
+  name        String
+  type        AccountingAccountType
+  description String?
+  isActive    Boolean               @default(true)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  lines       JournalLine[]
+  categories  ExpenseCategory[]
+
+  @@index([type, isActive])
+}
+
+model FinancialPeriod {
+  id                 String                @id @default(cuid())
+  monthKey           String                @unique
+  startsAt           DateTime
+  endsAt             DateTime
+  status             FinancialPeriodStatus @default(DRAFT)
+  notes              String?
+  reportSnapshot     Json?
+  submittedAt        DateTime?
+  submittedById      String?
+  approvedAt         DateTime?
+  approvedById       String?
+  closedAt           DateTime?
+  closedById         String?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  entries            JournalEntry[]
+  submittedBy        User?                 @relation("PeriodSubmitter", fields: [submittedById], references: [id], onDelete: SetNull)
+  approvedBy         User?                 @relation("PeriodApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  closedBy           User?                 @relation("PeriodCloser", fields: [closedById], references: [id], onDelete: SetNull)
+  profitCalculations ProfitCalculation[]
+
+  @@index([startsAt, endsAt])
+  @@index([status])
+}
+
+model ProfitCalculation {
+  id                      String                    @id @default(cuid())
+  periodId                String
+  revision                Int                       @default(1)
+  status                  ProfitCalculationStatus   @default(CALCULATED)
+  ownershipPolicy         OwnershipAllocationPolicy
+  netProfitKobo           Int
+  retainedEarningsKobo    Int                       @default(0)
+  reserveKobo             Int                       @default(0)
+  otherAdjustmentsKobo    Int                       @default(0)
+  distributableProfitKobo Int
+  allocatedProfitKobo     Int
+  unallocatedProfitKobo   Int
+  roundingRemainderKobo   Int                       @default(0)
+  notes                   String?
+  calculatedById          String
+  approvedAt              DateTime?
+  postedAt                DateTime?
+  rejectedAt              DateTime?
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  period                  FinancialPeriod           @relation(fields: [periodId], references: [id])
+  calculatedBy            User                      @relation("ProfitCalculator", fields: [calculatedById], references: [id])
+  approvals               ProfitApproval[]
+  allocations             ProfitAllocation[]
+
+  @@unique([periodId, revision])
+  @@index([status, createdAt])
+}
+
+model ProfitApproval {
+  id             String            @id @default(cuid())
+  calculationId  String
+  approverUserId String
+  approved       Boolean
+  note           String?
+  createdAt      DateTime          @default(now())
+  calculation    ProfitCalculation @relation(fields: [calculationId], references: [id], onDelete: Cascade)
+  approver       User              @relation("ProfitApprover", fields: [approverUserId], references: [id])
+
+  @@index([calculationId, approverUserId])
+}
+
+model ProfitAllocation {
+  id                 String                 @id @default(cuid())
+  calculationId      String
+  ownerId            String
+  ownershipWeightPpm Int
+  amountKobo         Int
+  status             ProfitAllocationStatus @default(PENDING)
+  postedAt           DateTime?
+  heldAt             DateTime?
+  holdReason         String?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  calculation        ProfitCalculation      @relation(fields: [calculationId], references: [id], onDelete: Cascade)
+  owner              OwnerProfile           @relation(fields: [ownerId], references: [id])
+
+  @@unique([calculationId, ownerId])
+  @@index([ownerId, status])
+}
+
+model JournalEntry {
+  id           String             @id @default(cuid())
+  entryNumber  String             @unique
+  periodId     String
+  sourceType   String
+  sourceId     String
+  entryDate    DateTime
+  description  String
+  status       JournalEntryStatus @default(POSTED)
+  reversalOfId String?            @unique
+  createdById  String?
+  postedAt     DateTime           @default(now())
+  createdAt    DateTime           @default(now())
+  period       FinancialPeriod    @relation(fields: [periodId], references: [id])
+  createdBy    User?              @relation("JournalCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  reversalOf   JournalEntry?      @relation("JournalReversal", fields: [reversalOfId], references: [id])
+  reversal     JournalEntry?      @relation("JournalReversal")
+  lines        JournalLine[]
+
+  @@unique([sourceType, sourceId])
+  @@index([periodId, entryDate])
+  @@index([sourceType, sourceId])
+}
+
+model JournalLine {
+  id             String            @id @default(cuid())
+  journalEntryId String
+  accountId      String
+  locationId     String?
+  orderId        String?
+  expenseId      String?
+  description    String?
+  debitKobo      Int               @default(0)
+  creditKobo     Int               @default(0)
+  createdAt      DateTime          @default(now())
+  journalEntry   JournalEntry      @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account        AccountingAccount @relation(fields: [accountId], references: [id])
+  location       Location?         @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  order          Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  expense        Expense?          @relation(fields: [expenseId], references: [id], onDelete: SetNull)
+
+  @@index([accountId, createdAt])
+  @@index([locationId, createdAt])
+  @@index([orderId])
+  @@index([expenseId])
+}
+
+model ExpenseCategory {
+  id                String            @id @default(cuid())
+  systemKey         String            @unique
+  name              String            @unique
+  defaultAccountId  String
+  inventoryPurchase Boolean           @default(false)
+  isActive          Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  defaultAccount    AccountingAccount @relation(fields: [defaultAccountId], references: [id])
+  expenses          Expense[]
+}
+
+model Expense {
+  id               String                @id @default(cuid())
+  categoryId       String
+  amountKobo       Int
+  expenseDate      DateTime
+  description      String
+  locationId       String?
+  supplierId       String?
+  receiptUrl       String?
+  approvalStatus   ExpenseApprovalStatus @default(PENDING_APPROVAL)
+  paymentStatus    ExpensePaymentStatus  @default(UNPAID)
+  isRecurring      Boolean               @default(false)
+  recurrence       ExpenseRecurrence?
+  nextOccurrenceAt DateTime?
+  createdById      String
+  approvedById     String?
+  approvedAt       DateTime?
+  rejectionReason  String?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  category         ExpenseCategory       @relation(fields: [categoryId], references: [id])
+  location         Location?             @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  supplier         Supplier?             @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  createdBy        User                  @relation("ExpenseCreator", fields: [createdById], references: [id])
+  approvedBy       User?                 @relation("ExpenseApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  journalLines     JournalLine[]
+
+  @@index([approvalStatus, expenseDate])
+  @@index([locationId, expenseDate])
+  @@index([categoryId, expenseDate])
+}
+
+model PaymentSettlement {
+  id                String           @id @default(cuid())
+  paymentIntentId   String?
+  locationId        String?
+  providerReference String           @unique
+  grossAmountKobo   Int
+  processingFeeKobo Int              @default(0)
+  netAmountKobo     Int
+  status            SettlementStatus @default(PENDING)
+  settledAt         DateTime?
+  providerResponse  Json?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  paymentIntent     PaymentIntent?   @relation(fields: [paymentIntentId], references: [id], onDelete: SetNull)
+  location          Location?        @relation(fields: [locationId], references: [id], onDelete: SetNull)
+
+  @@index([status, settledAt])
+  @@index([paymentIntentId])
+}
+
+model Refund {
+  id                String         @id @default(cuid())
+  orderId           String
+  paymentIntentId   String?
+  amountKobo        Int
+  reason            String
+  status            RefundStatus   @default(REQUESTED)
+  providerReference String?        @unique
+  requestedById     String
+  approvedById      String?
+  requestedAt       DateTime       @default(now())
+  approvedAt        DateTime?
+  paidAt            DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  order             Order          @relation(fields: [orderId], references: [id])
+  paymentIntent     PaymentIntent? @relation(fields: [paymentIntentId], references: [id], onDelete: SetNull)
+  requestedBy       User           @relation("RefundRequester", fields: [requestedById], references: [id])
+  approvedBy        User?          @relation("RefundApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  @@index([orderId, status])
+  @@index([status, requestedAt])
+}

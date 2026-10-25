@@ -1,0 +1,17 @@
+export const adminLinks = [
+  { label: "Overview", href: "/admin", permission: "orders.read" },
+  { label: "My wallet", href: "/admin/wallet", permission: "staff.wallet" },
+  { label: "Orders & kitchen", href: "/admin/orders", permission: "orders.read" },
+  { label: "Menu & products", href: "/admin/products", permission: "products.read" },
+  { label: "Customers", href: "/admin/customers", permission: "customers.read" },
+  { label: "Marketing", href: "/admin/marketing", permission: "marketing.manage" },
+  { label: "Coupons", href: "/admin/coupons", permission: "coupons.manage" },
+  { label: "Referrals", href: "/admin/referrals", permission: "referrals.manage" },
+  { label: "Inventory", href: "/admin/inventory", permission: "inventory.read" },
+  { label: "Accounting", href: "/admin/accounting", permission: "accounting.read" },
+  { label: "Reports", href: "/admin/reports", permission: "reports.read" },
+  { label: "Owners", href: "/admin/owners", permission: "owners.read" },
+  { label: "Profit allocation", href: "/admin/profit", permission: "profit.calculate" },
+  { label: "Staff & access", href: "/admin/staff", permission: "staff.manage" },
+  { label: "Owner payouts", href: "/admin/payouts", permission: "payouts.approve" },
+] as const;

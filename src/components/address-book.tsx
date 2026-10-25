@@ -1,0 +1,18 @@
+"use client";
+
+import { useEffect, useState, type FormEvent } from "react";
+import { MapPin, Trash2 } from "lucide-react";
+
+type Address = { id: string; label: string; recipientName: string; phone: string; line1: string; area: string; city: string; landmark: string | null; isDefault: boolean };
+export function AddressBook() {
+  const [addresses, setAddresses] = useState<Address[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState("");
+  async function load() { const response = await fetch("/api/v1/customers/me/addresses"); const body = await response.json(); if (!response.ok) throw new Error(body.error?.message); setAddresses(body.addresses); setLoading(false); }
+  useEffect(() => {
+    let active = true;
+    fetch("/api/v1/customers/me/addresses").then(async (response) => { const body = await response.json(); if (!response.ok) throw new Error(body.error?.message); if (active) { setAddresses(body.addresses); setLoading(false); } }).catch((reason) => { if (active) setError(reason.message); });
+    return () => { active = false; };
+  }, []);
+  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); setError(""); const form = event.currentTarget; const data = Object.fromEntries(new FormData(form)); try { const response = await fetch("/api/v1/customers/me/addresses", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...data, city: "Lagos", isDefault: addresses.length === 0 }) }); const body = await response.json(); if (!response.ok) throw new Error(body.error?.message); form.reset(); await load(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not save address."); } }
+  async function remove(id: string) { await fetch(`/api/v1/customers/me/addresses/${id}`, { method: "DELETE" }); await load(); }
+  return <div className="grid gap-8 lg:grid-cols-[1fr_420px]"><section className="space-y-3">{loading ? <p className="text-crave-muted">Loading addresses…</p> : addresses.length ? addresses.map((address) => <article key={address.id} className="flex justify-between gap-5 rounded-[1.7rem] bg-white p-6"><div><div className="flex items-center gap-2"><MapPin size={17} className="text-crave-orange" /><h2 className="font-bold">{address.label}</h2>{address.isDefault && <span className="rounded-full bg-crave-cream px-2 py-1 text-[10px] font-bold">DEFAULT</span>}</div><p className="mt-3 text-sm">{address.line1}, {address.area}, {address.city}</p><p className="mt-1 text-xs text-crave-muted">{address.recipientName} · {address.phone}</p></div><button aria-label={`Delete ${address.label}`} onClick={() => void remove(address.id)} className="grid size-9 shrink-0 place-items-center rounded-full hover:bg-black/5"><Trash2 size={16} /></button></article>) : <div className="rounded-[1.7rem] bg-white p-8 text-crave-muted">No saved addresses yet.</div>}</section><form onSubmit={submit} className="h-fit space-y-4 rounded-[2rem] bg-white p-7"><h2 className="text-2xl font-bold">Add an address</h2>{[["label", "Label", "Home"], ["recipientName", "Recipient", "Ada"], ["phone", "Phone", "+234…"], ["line1", "Street address", "12 Crave Street"], ["area", "Area", "Victoria Island"], ["landmark", "Landmark (optional)", "Near…"]].map(([name, label, placeholder]) => <label key={name} className="block"><span className="mb-1.5 block text-sm font-bold">{label}</span><input required={name !== "landmark"} name={name} placeholder={placeholder} className="min-h-12 w-full rounded-xl border border-black/10 px-4" /></label>)}{error && <p className="text-sm text-crave-red">{error}</p>}<button className="min-h-12 w-full rounded-full bg-crave-orange font-bold text-white">Save address</button></form></div>;
+}
