@@ -10,5 +10,8 @@ const items = [{ label: "Home", href: "/", icon: House }, { label: "Explore", hr
 export function MobileBottomNav() {
   const pathname = usePathname();
   if (pathname.startsWith("/login") || pathname.startsWith("/admin") || pathname.startsWith("/owner")) return null;
-  return <nav aria-label="Primary" className="fixed inset-x-3 bottom-3 z-50 grid grid-cols-4 rounded-[1.4rem] border border-white/60 bg-crave-ink/95 p-1.5 text-white shadow-2xl backdrop-blur md:hidden">{items.map(({ label, href, icon: Icon }) => { const active = href === "/" ? pathname === "/" : pathname.startsWith(href); return <Link key={href} href={href} className={cn("flex min-h-14 flex-col items-center justify-center gap-1 rounded-[1rem] text-[10px] font-semibold", active && "bg-crave-orange")}><Icon size={18} /><span>{label}</span></Link>; })}</nav>;
+  return <>
+    <div aria-hidden="true" className="h-[calc(4.5rem+env(safe-area-inset-bottom))] md:hidden" />
+    <nav aria-label="Primary" className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-4 border-x-0 border-b-0 border-t border-white/60 bg-crave-ink/95 px-1.5 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] text-white shadow-2xl backdrop-blur sm:inset-x-auto sm:left-1/2 sm:bottom-3 sm:w-[min(32rem,calc(100vw-1.5rem))] sm:-translate-x-1/2 sm:rounded-[1.4rem] sm:border sm:p-1.5 md:hidden">{items.map(({ label, href, icon: Icon }) => { const active = href === "/" ? pathname === "/" : pathname.startsWith(href); return <Link key={href} href={href} className={cn("flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-[1rem] px-1 text-[10px] font-semibold", active && "bg-crave-orange")}><Icon size={18} /><span className="max-w-full truncate">{label}</span></Link>; })}</nav>
+  </>;
 }

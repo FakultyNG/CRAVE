@@ -93,7 +93,7 @@ export function AuthFlow() {
       {mode !== "login" && <fieldset><legend className="mb-3 text-sm font-semibold">1. Where should we send your code?</legend><div className="grid grid-cols-2 gap-3"><ChannelButton active={channel === "SMS"} onClick={() => setChannel("SMS")} icon={<Smartphone size={20} />} label="SMS" /><ChannelButton active={channel === "WHATSAPP"} onClick={() => setChannel("WHATSAPP")} icon={<MessageCircle size={20} />} label="WhatsApp" /></div></fieldset>}
       {mode === "register" && <Field label="2. What should we call you?" value={preferredName} onChange={setPreferredName} placeholder="Your preferred name" autoComplete="name" />}
       <Field label={mode === "login" ? "Phone number" : mode === "register" ? "3. Your phone number" : "2. Your phone number"} value={phone} onChange={setPhone} placeholder="0801 234 5678" type="tel" autoComplete="tel" />
-      {mode === "register" && <Field label="Referral code (optional)" value={referralCode} onChange={(value) => setReferralCode(value.toUpperCase())} placeholder="CRV…" autoComplete="off" />}
+      {mode === "register" && <Field label="Referral code (optional)" value={referralCode} onChange={(value) => setReferralCode(value.toUpperCase())} placeholder="CRV…" autoComplete="off" required={false} />}
       {mode === "login" && <Field label="Your 6-digit PIN" value={pin} onChange={setPin} placeholder="••••••" type="password" inputMode="numeric" maxLength={6} autoComplete="current-password" />}
       <Button className="w-full" disabled={busy}>{busy ? <LoaderCircle className="animate-spin" size={18} /> : mode === "login" ? "Sign in" : "Send my code"}</Button>
       {mode === "login" && <button type="button" onClick={() => switchMode("recover")} className="w-full text-center text-sm font-semibold text-crave-red">Forgot your PIN?</button>}
@@ -109,7 +109,7 @@ function ChannelButton({ active, onClick, icon, label }: { active: boolean; onCl
   return <button type="button" aria-pressed={active} onClick={onClick} className={cn("flex min-h-20 items-center gap-3 rounded-2xl border px-4 text-left font-semibold transition", active ? "border-crave-red bg-red-50 text-crave-red" : "border-black/10 bg-white hover:border-black/25")}>{icon}<span>{label}</span>{active && <Check className="ml-auto" size={17} />}</button>;
 }
 
-type FieldProps = { label: string; value: string; onChange: (value: string) => void; placeholder: string; type?: string; inputMode?: "numeric"; maxLength?: number; autoComplete?: string };
-function Field({ label, value, onChange, placeholder, type = "text", ...props }: FieldProps) {
-  return <label className="block"><span className="mb-2 block text-sm font-semibold">{label}</span><input required value={value} onChange={(event) => onChange(props.inputMode === "numeric" ? event.target.value.replace(/\D/g, "") : event.target.value)} placeholder={placeholder} type={type} className="h-14 w-full rounded-2xl border border-black/10 bg-white px-4 outline-none transition placeholder:text-black/25 focus:border-crave-orange focus:ring-4 focus:ring-orange-100" {...props} /></label>;
+type FieldProps = { label: string; value: string; onChange: (value: string) => void; placeholder: string; type?: string; inputMode?: "numeric"; maxLength?: number; autoComplete?: string; required?: boolean };
+function Field({ label, value, onChange, placeholder, type = "text", required = true, ...props }: FieldProps) {
+  return <label className="block"><span className="mb-2 block text-sm font-semibold">{label}</span><input required={required} value={value} onChange={(event) => onChange(props.inputMode === "numeric" ? event.target.value.replace(/\D/g, "") : event.target.value)} placeholder={placeholder} type={type} className="h-14 w-full rounded-2xl border border-black/10 bg-white px-4 outline-none transition placeholder:text-black/25 focus:border-crave-orange focus:ring-4 focus:ring-orange-100" {...props} /></label>;
 }
