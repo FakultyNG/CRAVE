@@ -25,6 +25,7 @@ try {
   console.log("The incomplete database was reset and the initial schema was applied successfully.");
 } catch (error) {
   await client.query("ROLLBACK").catch(() => undefined);
+  console.error("Database reset failed with PostgreSQL code", typeof error === "object" && error !== null && "code" in error ? error.code : "UNKNOWN");
   throw error;
 } finally {
   await client.end();
