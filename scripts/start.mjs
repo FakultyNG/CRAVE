@@ -33,8 +33,11 @@ function failureCategory(result) {
 
 function runPackageScript(script) {
   const packageManagerPath = process.env.npm_execpath;
-  const command = packageManagerPath ? process.execPath : process.platform === "win32" ? "pnpm.cmd" : "pnpm";
-  const args = packageManagerPath ? [packageManagerPath, "run", script] : ["run", script];
+  const packageManagerIsJavaScript = packageManagerPath ? /\.[cm]?js$/i.test(packageManagerPath) : false;
+  const command = packageManagerIsJavaScript
+    ? process.execPath
+    : packageManagerPath || (process.platform === "win32" ? "pnpm.cmd" : "pnpm");
+  const args = packageManagerIsJavaScript ? [packageManagerPath, "run", script] : ["run", script];
   const result = spawnSync(command, args, { env: process.env, encoding: "utf8", stdio: ["inherit", "pipe", "pipe"], timeout: 60_000 });
   if (result.stdout) process.stdout.write(result.stdout);
   if (result.stderr) process.stderr.write(result.stderr);
