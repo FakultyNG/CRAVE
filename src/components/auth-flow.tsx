@@ -4,6 +4,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, LoaderCircle, MessageCircle, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { AuthDestination } from "@/lib/auth/destination";
 import { cn } from "@/lib/utils";
 
 type Mode = "login" | "register" | "recover";
@@ -43,8 +44,8 @@ export function AuthFlow() {
     event.preventDefault(); setBusy(true); setError("");
     try {
       if (mode === "login") {
-        await post("/api/v1/auth/login", { phone, pin });
-        router.replace("/account"); router.refresh(); return;
+        const result = await post<{ data: { destination: AuthDestination } }>("/api/v1/auth/login", { phone, pin });
+        router.replace(result.data.destination); router.refresh(); return;
       }
       if (!channel) throw new Error("Choose SMS or WhatsApp first.");
       const result = await post<{ data: { challengeId: string; testOtp?: string } }>("/api/v1/auth/otp/request", {
