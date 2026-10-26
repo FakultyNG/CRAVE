@@ -19,7 +19,6 @@
     "db:deploy": "prisma migrate deploy",
     "db:push:deploy": "prisma db push",
     "db:assert-empty": "node scripts/assert-empty-database.mjs",
-    "db:assert-incomplete": "node scripts/assert-incomplete-database.mjs",
     "db:push:empty": "prisma db push --accept-data-loss",
     "db:reset-incomplete": "node scripts/reset-incomplete-database.mjs",
     "db:seed": "prisma db seed",

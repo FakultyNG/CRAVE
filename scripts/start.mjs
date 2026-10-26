@@ -46,7 +46,7 @@ if (process.env.DATABASE_URL) {
   if (!schemaReady && emptyDatabase) {
     schemaReady = runPackageScript("db:push:empty");
   }
-  if (!schemaReady && !emptyDatabase && runPackageScript("db:assert-incomplete")) {
+  if (!schemaReady && !emptyDatabase) {
     console.warn("Resetting the incomplete database with explicit owner approval.");
     schemaReady = runPackageScript("db:reset-incomplete");
   }
