@@ -8,12 +8,13 @@ const preparationFailures = new Map();
 const preparationFailureDetails = new Map();
 
 function safeFailureDetail(output) {
-  return output
+  const sanitized = output
     .replace(/postgres(?:ql)?:\/\/\S+/gi, "[database-url-redacted]")
     .replace(/[\r\n]+/g, " ")
     .replace(/\s+/g, " ")
-    .trim()
-    .slice(-300);
+    .trim();
+  if (sanitized.length <= 500) return sanitized;
+  return `${sanitized.slice(0, 250)} … ${sanitized.slice(-250)}`;
 }
 
 function failureCategory(result) {
