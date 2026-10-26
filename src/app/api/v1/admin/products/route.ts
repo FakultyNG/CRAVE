@@ -8,7 +8,7 @@ const productSchema = z.object({ name: z.string().trim().min(2).max(100), slug: 
 
 export async function GET() {
   await connection();
-  try { const auth = await apiPermission("products.read"); if ("response" in auth) return auth.response; const products = await getDb().product.findMany({ orderBy: { updatedAt: "desc" }, include: { category: true, media: { orderBy: { position: "asc" } }, variants: true, options: true, availability: true, costs: { orderBy: { effectiveFrom: "desc" }, take: 1 } } }); return Response.json({ products }); }
+  try { const auth = await apiPermission("products.read"); if ("response" in auth) return auth.response; const db = getDb(); const [products, categories] = await Promise.all([db.product.findMany({ orderBy: { updatedAt: "desc" }, include: { category: true, media: { orderBy: { position: "asc" } }, variants: true, options: true, availability: true, costs: { orderBy: { effectiveFrom: "desc" }, take: 1 } } }), db.category.findMany({ where: { isActive: true }, orderBy: [{ position: "asc" }, { name: "asc" }] })]); return Response.json({ products, categories }); }
   catch (error) { return handleApiError(error); }
 }
 
