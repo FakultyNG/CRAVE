@@ -18,6 +18,7 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
+    "db:seed:if-empty": "tsx prisma/seed.ts --if-empty",
     "db:seed:demo": "tsx prisma/seed-demo.ts",
     "db:bootstrap-admin": "tsx prisma/bootstrap-admin.ts",
     "db:studio": "prisma studio",

@@ -38,6 +38,14 @@ const rolePermissions: Record<string, readonly string[]> = {
 };
 
 async function main() {
+  if (process.argv.includes("--if-empty")) {
+    const productCount = await prisma.product.count();
+    if (productCount > 0) {
+      console.log(`Catalogue already contains ${productCount} product(s); skipping initial seed.`);
+      return;
+    }
+  }
+
   const location = await prisma.location.upsert({
     where: { slug: "lagos" },
     update: {},
