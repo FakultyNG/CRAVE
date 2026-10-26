@@ -15,9 +15,14 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   if (!process.env.DATABASE_URL) {
     product = catalogBySlug.get(slug);
   } else {
-    const record = await getDb().product.findUnique({ where: { slug }, include: { variants: { where: { isActive: true }, orderBy: { position: "asc" } }, options: { orderBy: { position: "asc" } }, media: { orderBy: { position: "asc" } } } });
-    if (record && record.status !== "ARCHIVED") {
-      product = { slug: record.slug, name: record.name, category: record.name === "Nkwobi" ? "Food" : record.name === "Parfaits" ? "Treats" : "Drinks", eyebrow: record.status === "UNAVAILABLE" ? "Back soon" : "Made fresh to order", description: record.description, basePriceKobo: record.basePriceKobo, image: record.media[0]?.url ?? "/products/nkwobi.png", accent: "#e4281f", preparationMins: record.preparationMins ?? 15, allergens: record.allergens, variants: record.variants.map((item) => ({ name: item.name, priceDeltaKobo: item.priceDeltaKobo })), optionGroup: record.options[0]?.groupName ?? "Extras", options: record.options.map((item) => ({ name: item.name, priceKobo: item.priceDeltaKobo })) };
+    try {
+      const record = await getDb().product.findUnique({ where: { slug }, include: { variants: { where: { isActive: true }, orderBy: { position: "asc" } }, options: { orderBy: { position: "asc" } }, media: { orderBy: { position: "asc" } } } });
+      if (record && record.status !== "ARCHIVED") {
+        product = { slug: record.slug, name: record.name, category: record.name === "Nkwobi" ? "Food" : record.name === "Parfaits" ? "Treats" : "Drinks", eyebrow: record.status === "UNAVAILABLE" ? "Back soon" : "Made fresh to order", description: record.description, basePriceKobo: record.basePriceKobo, image: record.media[0]?.url ?? "/products/nkwobi.png", accent: "#e4281f", preparationMins: record.preparationMins ?? 15, allergens: record.allergens, variants: record.variants.map((item) => ({ name: item.name, priceDeltaKobo: item.priceDeltaKobo })), optionGroup: record.options[0]?.groupName ?? "Extras", options: record.options.map((item) => ({ name: item.name, priceKobo: item.priceDeltaKobo })) };
+      }
+    } catch (error) {
+      console.error("Product lookup failed; rendering bundled catalogue fallback.", error);
+      product = catalogBySlug.get(slug);
     }
   }
 
