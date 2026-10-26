@@ -5,6 +5,16 @@ import { spawnSync } from "node:child_process";
 // which container runtimes may set to an internal container identifier.
 process.env.HOSTNAME = "0.0.0.0";
 const preparationFailures = new Map();
+const preparationFailureDetails = new Map();
+
+function safeFailureDetail(output) {
+  return output
+    .replace(/postgres(?:ql)?:\/\/\S+/gi, "[database-url-redacted]")
+    .replace(/[\r\n]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(-300);
+}
 
 function failureCategory(result) {
   if (result.error?.code === "ETIMEDOUT") return "timeout";
@@ -30,10 +40,14 @@ function runPackageScript(script) {
 
   if (result.error || result.status !== 0) {
     preparationFailures.set(script, failureCategory(result));
+    if (script === "db:reset-incomplete") {
+      preparationFailureDetails.set(script, safeFailureDetail(`${result.stdout ?? ""} ${result.stderr ?? ""}`));
+    }
     console.error(`Database preparation step '${script}' failed. Starting the web server so diagnostics remain available.`, result.error ?? `Exit code ${result.status}`);
     return false;
   }
   preparationFailures.delete(script);
+  preparationFailureDetails.delete(script);
   return true;
 }
 
@@ -54,6 +68,7 @@ if (process.env.DATABASE_URL) {
   }
   process.env.DATABASE_PREPARATION = `migration:${migrationReady ? "ok" : "failed"},schema:${schemaReady ? "ok" : "failed"},empty:${emptyDatabase ? "yes" : "no"}`;
   process.env.DATABASE_PREPARATION_FAILURES = [...preparationFailures].map(([step, reason]) => `${step}:${reason}`).join(",") || "none";
+  process.env.DATABASE_PREPARATION_DETAIL = preparationFailureDetails.get("db:reset-incomplete") || "none";
   if (schemaReady && runPackageScript("db:seed:if-empty")) {
     runPackageScript("db:bootstrap-admin:if-configured");
   }
