@@ -21,7 +21,6 @@ export async function GET() {
       otpProvider: process.env.STROWALLET_PUBLIC_KEY ? "configured" : "unconfigured",
       databasePreparation: process.env.DATABASE_PREPARATION ?? "not-run",
       databasePreparationFailures: process.env.DATABASE_PREPARATION_FAILURES ?? "none",
-      databasePreparationDetail: process.env.DATABASE_PREPARATION_DETAIL ?? "none",
       release: process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? "local",
     }, { headers });
   } catch (error) {
@@ -34,7 +33,6 @@ export async function GET() {
       otpProvider: process.env.STROWALLET_PUBLIC_KEY ? "configured" : "unconfigured",
       databasePreparation: process.env.DATABASE_PREPARATION ?? "not-run",
       databasePreparationFailures: process.env.DATABASE_PREPARATION_FAILURES ?? "none",
-      databasePreparationDetail: process.env.DATABASE_PREPARATION_DETAIL ?? "none",
       release: process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? "local",
     }, { status: 503, headers });
   }

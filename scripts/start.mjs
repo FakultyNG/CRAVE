@@ -5,17 +5,6 @@ import { spawnSync } from "node:child_process";
 // which container runtimes may set to an internal container identifier.
 process.env.HOSTNAME = "0.0.0.0";
 const preparationFailures = new Map();
-const preparationFailureDetails = new Map();
-
-function safeFailureDetail(output) {
-  const sanitized = output
-    .replace(/postgres(?:ql)?:\/\/\S+/gi, "[database-url-redacted]")
-    .replace(/[\r\n]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  if (sanitized.length <= 500) return sanitized;
-  return `${sanitized.slice(0, 250)} … ${sanitized.slice(-250)}`;
-}
 
 function failureCategory(result) {
   if (result.error?.code === "ETIMEDOUT") return "timeout";
@@ -44,35 +33,19 @@ function runPackageScript(script) {
 
   if (result.error || result.status !== 0) {
     preparationFailures.set(script, failureCategory(result));
-    if (script === "db:reset-incomplete") {
-      preparationFailureDetails.set(script, safeFailureDetail(`${result.stdout ?? ""} ${result.stderr ?? ""}`));
-    }
     console.error(`Database preparation step '${script}' failed. Starting the web server so diagnostics remain available.`, result.error ?? `Exit code ${result.status}`);
     return false;
   }
   preparationFailures.delete(script);
-  preparationFailureDetails.delete(script);
   return true;
 }
 
 if (process.env.DATABASE_URL) {
   console.log("Preparing the database before starting Crave...");
   const migrationReady = runPackageScript("db:deploy");
-  let schemaReady = runPackageScript("db:push:deploy");
-  let emptyDatabase = false;
-  if (!schemaReady) {
-    emptyDatabase = runPackageScript("db:assert-empty");
-  }
-  if (!schemaReady && emptyDatabase) {
-    schemaReady = runPackageScript("db:push:empty");
-  }
-  if (!schemaReady && !emptyDatabase) {
-    console.warn("Resetting the incomplete database with explicit owner approval.");
-    schemaReady = runPackageScript("db:reset-incomplete");
-  }
-  process.env.DATABASE_PREPARATION = `migration:${migrationReady ? "ok" : "failed"},schema:${schemaReady ? "ok" : "failed"},empty:${emptyDatabase ? "yes" : "no"}`;
+  const schemaReady = runPackageScript("db:push:deploy");
+  process.env.DATABASE_PREPARATION = `migration:${migrationReady ? "ok" : "failed"},schema:${schemaReady ? "ok" : "failed"}`;
   process.env.DATABASE_PREPARATION_FAILURES = [...preparationFailures].map(([step, reason]) => `${step}:${reason}`).join(",") || "none";
-  process.env.DATABASE_PREPARATION_DETAIL = preparationFailureDetails.get("db:reset-incomplete") || "none";
   if (schemaReady && runPackageScript("db:seed:if-empty")) {
     runPackageScript("db:bootstrap-admin:if-configured");
   }
