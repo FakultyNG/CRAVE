@@ -4,7 +4,7 @@
     "buildCommand": "pnpm build"
   },
   "deploy": {
-    "preDeployCommand": ["pnpm db:deploy", "pnpm db:seed:if-empty"],
+    "preDeployCommand": ["pnpm db:deploy", "pnpm db:seed:if-empty", "pnpm db:bootstrap-admin:if-configured"],
     "startCommand": "pnpm start",
     "healthcheckPath": "/api/health",
     "healthcheckTimeout": 300,

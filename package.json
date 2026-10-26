@@ -21,6 +21,7 @@
     "db:seed:if-empty": "tsx prisma/seed.ts --if-empty",
     "db:seed:demo": "tsx prisma/seed-demo.ts",
     "db:bootstrap-admin": "tsx prisma/bootstrap-admin.ts",
+    "db:bootstrap-admin:if-configured": "tsx prisma/bootstrap-admin.ts --if-configured",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
     "quality": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
