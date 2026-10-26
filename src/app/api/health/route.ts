@@ -19,6 +19,7 @@ export async function GET() {
       database: "ready",
       schema: "ready",
       otpProvider: process.env.STROWALLET_PUBLIC_KEY ? "configured" : "unconfigured",
+      release: process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? "local",
     }, { headers });
   } catch (error) {
     console.error("Health check failed", error);
@@ -28,6 +29,7 @@ export async function GET() {
       schema: "unavailable",
       databaseErrorCode: errorCode(error),
       otpProvider: process.env.STROWALLET_PUBLIC_KEY ? "configured" : "unconfigured",
+      release: process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? "local",
     }, { status: 503, headers });
   }
 }
