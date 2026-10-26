@@ -21,7 +21,10 @@ function runPackageScript(script) {
 if (process.env.DATABASE_URL) {
   console.log("Preparing the database before starting Crave...");
   runPackageScript("db:deploy");
-  const schemaReady = runPackageScript("db:push:deploy");
+  let schemaReady = runPackageScript("db:push:deploy");
+  if (!schemaReady && runPackageScript("db:assert-empty")) {
+    schemaReady = runPackageScript("db:push:empty");
+  }
   if (schemaReady && runPackageScript("db:seed:if-empty")) {
     runPackageScript("db:bootstrap-admin:if-configured");
   }

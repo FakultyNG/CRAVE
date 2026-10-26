@@ -18,6 +18,8 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:push:deploy": "prisma db push",
+    "db:assert-empty": "node scripts/assert-empty-database.mjs",
+    "db:push:empty": "prisma db push --accept-data-loss",
     "db:seed": "prisma db seed",
     "db:seed:if-empty": "tsx prisma/seed.ts --if-empty",
     "db:seed:demo": "tsx prisma/seed-demo.ts",
