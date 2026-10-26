@@ -29,6 +29,10 @@ if (process.env.DATABASE_URL) {
   if (!schemaReady && emptyDatabase) {
     schemaReady = runPackageScript("db:push:empty");
   }
+  if (!schemaReady && !emptyDatabase && runPackageScript("db:assert-incomplete")) {
+    console.warn("Resetting the incomplete database with explicit owner approval.");
+    schemaReady = runPackageScript("db:reset-incomplete");
+  }
   process.env.DATABASE_PREPARATION = `migration:${migrationReady ? "ok" : "failed"},schema:${schemaReady ? "ok" : "failed"},empty:${emptyDatabase ? "yes" : "no"}`;
   if (schemaReady && runPackageScript("db:seed:if-empty")) {
     runPackageScript("db:bootstrap-admin:if-configured");
