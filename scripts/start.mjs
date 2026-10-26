@@ -10,6 +10,8 @@ function failureCategory(result) {
   if (result.error?.code === "ETIMEDOUT") return "timeout";
   if (result.error) return "process-error";
   const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
+  const resetStage = output.match(/Database reset failed at stage\s+(\d+)/i)?.[1];
+  if (resetStage) return `reset-stage-${resetStage}`;
   const postgresCode = output.match(/PostgreSQL code\s+([A-Z0-9]+)/i)?.[1];
   if (postgresCode) return `postgres-${postgresCode}`;
   if (/contains data/i.test(output)) return "existing-data";
