@@ -9,17 +9,20 @@ function runPackageScript(script) {
   const packageManagerPath = process.env.npm_execpath;
   const command = packageManagerPath ? process.execPath : process.platform === "win32" ? "pnpm.cmd" : "pnpm";
   const args = packageManagerPath ? [packageManagerPath, "run", script] : ["run", script];
-  const result = spawnSync(command, args, { env: process.env, stdio: "inherit" });
+  const result = spawnSync(command, args, { env: process.env, stdio: "inherit", timeout: 60_000 });
 
-  if (result.error) throw result.error;
-  if (result.status !== 0) process.exit(result.status ?? 1);
+  if (result.error || result.status !== 0) {
+    console.error(`Database preparation step '${script}' failed. Starting the web server so diagnostics remain available.`, result.error ?? `Exit code ${result.status}`);
+    return false;
+  }
+  return true;
 }
 
 if (process.env.DATABASE_URL) {
   console.log("Preparing the database before starting Crave...");
-  runPackageScript("db:deploy");
-  runPackageScript("db:seed:if-empty");
-  runPackageScript("db:bootstrap-admin:if-configured");
+  if (runPackageScript("db:deploy") && runPackageScript("db:seed:if-empty")) {
+    runPackageScript("db:bootstrap-admin:if-configured");
+  }
 } else {
   console.warn("DATABASE_URL is not configured; database-backed features will be unavailable.");
 }

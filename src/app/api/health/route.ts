@@ -3,6 +3,13 @@ import { connection } from "next/server";
 
 const headers = { "Cache-Control": "no-store, max-age=0" };
 
+function errorCode(error: unknown): string {
+  if (typeof error !== "object" || error === null) return "UNKNOWN";
+  if ("code" in error && typeof error.code === "string") return error.code;
+  if ("cause" in error) return errorCode(error.cause);
+  return "UNKNOWN";
+}
+
 export async function GET() {
   try {
     await connection();
@@ -14,15 +21,12 @@ export async function GET() {
       otpProvider: process.env.STROWALLET_PUBLIC_KEY ? "configured" : "unconfigured",
     }, { headers });
   } catch (error) {
-    const databaseErrorCode = typeof error === "object" && error !== null && "code" in error && typeof error.code === "string"
-      ? error.code
-      : "UNKNOWN";
     console.error("Health check failed", error);
     return Response.json({
       status: "unavailable",
       database: "unavailable",
       schema: "unavailable",
-      databaseErrorCode,
+      databaseErrorCode: errorCode(error),
       otpProvider: process.env.STROWALLET_PUBLIC_KEY ? "configured" : "unconfigured",
     }, { status: 503, headers });
   }
