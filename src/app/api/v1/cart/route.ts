@@ -3,8 +3,9 @@ import { z } from "zod";
 import { activeCart, cartPayload } from "@/lib/commerce/cart";
 import { getDb } from "@/lib/db";
 import { handleApiError, jsonError } from "@/lib/api";
+import { optionSelectionError } from "@/lib/product-config/selections";
 
-const addSchema = z.object({ productSlug: z.string().min(1), variantName: z.string().optional(), optionNames: z.array(z.string()).max(5).default([]), quantity: z.number().int().min(1).max(20).default(1) });
+const addSchema = z.object({ productSlug: z.string().min(1), variantName: z.string().optional(), optionNames: z.array(z.string()).max(20).default([]), quantity: z.number().int().min(1).max(20).default(1) });
 
 export async function GET() {
   await connection();
@@ -24,6 +25,8 @@ export async function POST(request: Request) {
     if (input.variantName && !variant) return jsonError("That size is no longer available.", 409);
     const selectedOptions = product.options.filter((option) => input.optionNames.includes(option.name));
     if (selectedOptions.length !== new Set(input.optionNames).size) return jsonError("One of those options is no longer available.", 409);
+    const selectionError = optionSelectionError(product.options, input.optionNames);
+    if (selectionError) return jsonError(selectionError, 422);
     const cart = await activeCart(true);
     if (!cart) return jsonError("Unable to start a cart.", 500);
     const item = await db.cartItem.create({ data: { cartId: cart.id, productId: product.id, variantId: variant?.id, quantity: input.quantity, options: { create: selectedOptions.map((option) => ({ optionId: option.id })) } } });

@@ -1,4 +1,4 @@
-export type CatalogOption = { name: string; priceKobo: number };
+export type CatalogOption = { name: string; priceKobo: number; groupName?: string; isRequired?: boolean; maxSelections?: number };
 export type CatalogVariant = { name: string; priceDeltaKobo: number };
 
 export type CatalogProduct = {

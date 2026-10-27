@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { upload } from "@vercel/blob/client";
-import { ImagePlus, PackagePlus, Pencil, Save, Trash2, X } from "lucide-react";
+import { ImagePlus, PackagePlus, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { formatNaira } from "@/lib/utils";
 
 type Category = { id: string; name: string; slug: string };
+type ProductVariant = { id: string; name: string; sku: string | null; priceDeltaKobo: number; isActive: boolean; position: number };
+type ProductOption = { id: string; name: string; groupName: string; priceDeltaKobo: number; isRequired: boolean; maxSelections: number; position: number };
 type Product = {
   id: string;
   name: string;
@@ -18,6 +20,8 @@ type Product = {
   isFeatured: boolean;
   category: Category;
   media: { id: string; type: string; url: string }[];
+  variants: ProductVariant[];
+  options: ProductOption[];
 };
 
 const statuses = ["DRAFT", "ACTIVE", "UNAVAILABLE", "ARCHIVED"];
@@ -206,7 +210,7 @@ export function ProductManager() {
             </div>
           </div>
           <p className="mt-4 line-clamp-2 text-sm leading-6 text-crave-muted">{product.description}</p>
-          {editingId === product.id && <EditProductForm product={product} categories={categories} busy={busy} onCancel={() => setEditingId(null)} onSubmit={(event) => void update(event, product)} />}
+          {editingId === product.id && <div><EditProductForm product={product} categories={categories} busy={busy} onCancel={() => setEditingId(null)} onSubmit={(event) => void update(event, product)} /><ProductConfiguration product={product} onChanged={load} /></div>}
         </article>)}
       </section>
       <form onSubmit={create} className="h-fit space-y-4 rounded-[2rem] bg-crave-ink p-6 text-white xl:sticky xl:top-8">
@@ -251,4 +255,106 @@ function TextField({ label, ...inputProps }: FieldProps) {
 
 function EditField({ label, ...inputProps }: FieldProps) {
   return <label className="block"><span className="mb-1.5 block text-xs font-bold text-crave-muted">{label}</span><input required {...inputProps} aria-label={label} className="min-h-11 w-full rounded-xl border border-black/10 bg-white px-3" /></label>;
+}
+
+function ProductConfiguration({ product, onChanged }: { product: Product; onChanged: () => Promise<void> }) {
+  const [editingVariant, setEditingVariant] = useState<string | null>(null);
+  const [editingOption, setEditingOption] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  async function request(url: string, method: "POST" | "PATCH" | "DELETE", body?: unknown) {
+    const response = await fetch(url, { method, headers: body ? { "content-type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(errorMessage(payload, "The product configuration could not be changed."));
+  }
+
+  async function saveVariant(event: FormEvent<HTMLFormElement>, variant?: ProductVariant) {
+    event.preventDefault(); setBusy(true); setError(""); setMessage("");
+    const form = event.currentTarget; const data = new FormData(form);
+    try {
+      await request(`/api/v1/admin/products/${product.id}/variants${variant ? `/${variant.id}` : ""}`, variant ? "PATCH" : "POST", {
+        name: String(data.get("name")), sku: String(data.get("sku")).trim() || null,
+        priceDeltaKobo: Math.round(Number(data.get("priceDelta")) * 100), isActive: data.get("isActive") === "on", position: Number(data.get("position")),
+      });
+      if (!variant) form.reset(); setEditingVariant(null); await onChanged(); setMessage(variant ? "Variant updated." : "Variant created.");
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Variant could not be saved."); }
+    finally { setBusy(false); }
+  }
+
+  async function saveOption(event: FormEvent<HTMLFormElement>, option?: ProductOption) {
+    event.preventDefault(); setBusy(true); setError(""); setMessage("");
+    const form = event.currentTarget; const data = new FormData(form);
+    try {
+      await request(`/api/v1/admin/products/${product.id}/options${option ? `/${option.id}` : ""}`, option ? "PATCH" : "POST", {
+        name: String(data.get("name")), groupName: String(data.get("groupName")), priceDeltaKobo: Math.round(Number(data.get("priceDelta")) * 100),
+        isRequired: data.get("isRequired") === "on", maxSelections: Number(data.get("maxSelections")), position: Number(data.get("position")),
+      });
+      if (!option) form.reset(); setEditingOption(null); await onChanged(); setMessage(option ? "Option updated." : "Option created.");
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Option could not be saved."); }
+    finally { setBusy(false); }
+  }
+
+  async function remove(kind: "variants" | "options", id: string, name: string) {
+    if (!window.confirm(`Delete ${name}? It will also be removed from any active carts.`)) return;
+    setBusy(true); setError(""); setMessage("");
+    try { await request(`/api/v1/admin/products/${product.id}/${kind}/${id}`, "DELETE"); await onChanged(); setMessage(`${name} was deleted.`); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : `${name} could not be deleted.`); }
+    finally { setBusy(false); }
+  }
+
+  return <section className="mt-5 rounded-2xl border border-black/10 p-4">
+    <div className="mb-5"><h3 className="text-lg font-bold">Sizes, blends & extras</h3><p className="text-xs text-crave-muted">Price adjustments are entered in naira. Lower display positions appear first.</p></div>
+    {error && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p>}
+    {message && <p role="status" className="mb-4 rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">{message}</p>}
+    <div className="grid gap-6 lg:grid-cols-2">
+      <div>
+        <h4 className="mb-3 font-bold">Sizes / variants</h4>
+        <div className="space-y-2">{product.variants.map((variant) => editingVariant === variant.id
+          ? <VariantForm key={variant.id} variant={variant} busy={busy} onCancel={() => setEditingVariant(null)} onSubmit={(event) => void saveVariant(event, variant)} />
+          : <div key={variant.id} className="flex items-center justify-between gap-3 rounded-xl bg-crave-cream/60 p-3"><div><strong className="text-sm">{variant.name}</strong><p className="text-xs text-crave-muted">{variant.priceDeltaKobo ? `+${formatNaira(variant.priceDeltaKobo)}` : "Included"} · position {variant.position} · {variant.isActive ? "active" : "inactive"}{variant.sku ? ` · ${variant.sku}` : ""}</p></div><div className="flex gap-1"><IconButton label={`Edit ${variant.name}`} onClick={() => setEditingVariant(variant.id)}><Pencil size={14} /></IconButton><IconButton label={`Delete ${variant.name}`} danger onClick={() => void remove("variants", variant.id, variant.name)}><Trash2 size={14} /></IconButton></div></div>)}</div>
+        <VariantForm busy={busy} onSubmit={(event) => void saveVariant(event)} />
+      </div>
+      <div>
+        <h4 className="mb-3 font-bold">Blends / extras</h4>
+        <div className="space-y-2">{product.options.map((option) => editingOption === option.id
+          ? <OptionForm key={option.id} option={option} busy={busy} onCancel={() => setEditingOption(null)} onSubmit={(event) => void saveOption(event, option)} />
+          : <div key={option.id} className="flex items-center justify-between gap-3 rounded-xl bg-crave-cream/60 p-3"><div><strong className="text-sm">{option.name}</strong><p className="text-xs text-crave-muted">{option.groupName} · {option.priceDeltaKobo ? `+${formatNaira(option.priceDeltaKobo)}` : "Included"} · max {option.maxSelections}{option.isRequired ? " · required" : ""}</p></div><div className="flex gap-1"><IconButton label={`Edit ${option.name}`} onClick={() => setEditingOption(option.id)}><Pencil size={14} /></IconButton><IconButton label={`Delete ${option.name}`} danger onClick={() => void remove("options", option.id, option.name)}><Trash2 size={14} /></IconButton></div></div>)}</div>
+        <OptionForm busy={busy} onSubmit={(event) => void saveOption(event)} />
+      </div>
+    </div>
+  </section>;
+}
+
+function VariantForm({ variant, busy, onCancel, onSubmit }: { variant?: ProductVariant; busy: boolean; onCancel?: () => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void }) {
+  return <form onSubmit={onSubmit} className="mt-3 grid gap-2 rounded-xl border border-black/10 p-3 sm:grid-cols-2">
+    <ConfigField name="name" label="Name" placeholder="Large" defaultValue={variant?.name} />
+    <ConfigField name="sku" label="SKU (optional)" placeholder="SMOOTHIE-L" defaultValue={variant?.sku ?? ""} required={false} />
+    <ConfigField name="priceDelta" label="Extra price (₦)" type="number" min="0" step="0.01" defaultValue={(variant?.priceDeltaKobo ?? 0) / 100} />
+    <ConfigField name="position" label="Display position" type="number" min="0" defaultValue={variant?.position ?? 0} />
+    <label className="flex items-center gap-2 text-xs font-semibold sm:col-span-2"><input name="isActive" type="checkbox" defaultChecked={variant?.isActive ?? true} /> Available to customers</label>
+    <div className="flex justify-end gap-2 sm:col-span-2">{onCancel && <button type="button" onClick={onCancel} className="rounded-full border border-black/10 px-3 py-2 text-xs font-bold">Cancel</button>}<button disabled={busy} className="flex items-center gap-1 rounded-full bg-crave-ink px-4 py-2 text-xs font-bold text-white disabled:opacity-50">{variant ? <Save size={13} /> : <Plus size={13} />}{variant ? "Save variant" : "Add variant"}</button></div>
+  </form>;
+}
+
+function OptionForm({ option, busy, onCancel, onSubmit }: { option?: ProductOption; busy: boolean; onCancel?: () => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void }) {
+  return <form onSubmit={onSubmit} className="mt-3 grid gap-2 rounded-xl border border-black/10 p-3 sm:grid-cols-2">
+    <ConfigField name="name" label="Option name" placeholder="Mango sunshine" defaultValue={option?.name} />
+    <ConfigField name="groupName" label="Group name" placeholder="Choose a blend" defaultValue={option?.groupName} />
+    <ConfigField name="priceDelta" label="Extra price (₦)" type="number" min="0" step="0.01" defaultValue={(option?.priceDeltaKobo ?? 0) / 100} />
+    <ConfigField name="maxSelections" label="Maximum selections" type="number" min="1" max="20" defaultValue={option?.maxSelections ?? 1} />
+    <ConfigField name="position" label="Display position" type="number" min="0" defaultValue={option?.position ?? 0} />
+    <label className="flex items-center gap-2 self-end pb-3 text-xs font-semibold"><input name="isRequired" type="checkbox" defaultChecked={option?.isRequired ?? false} /> Group is required</label>
+    <p className="text-[11px] text-crave-muted sm:col-span-2">Required and maximum selection settings apply to every option sharing this group name.</p>
+    <div className="flex justify-end gap-2 sm:col-span-2">{onCancel && <button type="button" onClick={onCancel} className="rounded-full border border-black/10 px-3 py-2 text-xs font-bold">Cancel</button>}<button disabled={busy} className="flex items-center gap-1 rounded-full bg-crave-ink px-4 py-2 text-xs font-bold text-white disabled:opacity-50">{option ? <Save size={13} /> : <Plus size={13} />}{option ? "Save option" : "Add option"}</button></div>
+  </form>;
+}
+
+function ConfigField({ label, required = true, ...props }: FieldProps & { required?: boolean }) {
+  return <label className="block"><span className="mb-1 block text-[11px] font-bold text-crave-muted">{label}</span><input required={required} {...props} className="min-h-10 w-full rounded-lg border border-black/10 bg-white px-3 text-sm" /></label>;
+}
+
+function IconButton({ label, danger = false, onClick, children }: { label: string; danger?: boolean; onClick: () => void; children: ReactNode }) {
+  return <button type="button" aria-label={label} onClick={onClick} className={`grid size-9 place-items-center rounded-full ${danger ? "bg-red-50 text-red-700" : "bg-white"}`}>{children}</button>;
 }
