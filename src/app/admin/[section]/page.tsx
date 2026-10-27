@@ -16,9 +16,10 @@ import { AccountingWorkspace } from "@/components/accounting-workspace";
 import { FinancialReports } from "@/components/financial-reports";
 import { OwnerManager } from "@/components/owner-manager";
 import { ProfitManager } from "@/components/profit-manager";
+import { DeliveryZoneManager } from "@/components/delivery-zone-manager";
 
-const permissionBySection: Record<string, string> = { orders: "orders.read", products: "products.read", customers: "customers.read", marketing: "marketing.manage", coupons: "coupons.manage", referrals: "referrals.manage", inventory: "inventory.read", accounting: "accounting.read", reports: "reports.read", owners: "owners.read", profit: "profit.calculate", staff: "staff.manage", payouts: "payouts.approve" };
-const componentBySection: Record<string, ReactNode> = { wallet: <StaffWallet />, orders: <><KitchenBoard /><OrderRegister /></>, products: <ProductManager />, customers: <CustomerManager />, marketing: <GrowthManager view="marketing" />, coupons: <GrowthManager view="coupons" />, referrals: <GrowthManager view="referrals" />, inventory: <InventoryManager />, accounting: <AccountingWorkspace />, reports: <FinancialReports />, owners: <OwnerManager />, profit: <ProfitManager />, staff: <><PayrollFundingSwitch /><StaffManager /></>, payouts: <PayoutManager /> };
+const permissionBySection: Record<string, string> = { orders: "orders.read", products: "products.read", "delivery-areas": "settings.manage", customers: "customers.read", marketing: "marketing.manage", coupons: "coupons.manage", referrals: "referrals.manage", inventory: "inventory.read", accounting: "accounting.read", reports: "reports.read", owners: "owners.read", profit: "profit.calculate", staff: "staff.manage", payouts: "payouts.approve" };
+const componentBySection: Record<string, ReactNode> = { wallet: <StaffWallet />, orders: <><KitchenBoard /><OrderRegister /></>, products: <ProductManager />, "delivery-areas": <DeliveryZoneManager />, customers: <CustomerManager />, marketing: <GrowthManager view="marketing" />, coupons: <GrowthManager view="coupons" />, referrals: <GrowthManager view="referrals" />, inventory: <InventoryManager />, accounting: <AccountingWorkspace />, reports: <FinancialReports />, owners: <OwnerManager />, profit: <ProfitManager />, staff: <><PayrollFundingSwitch /><StaffManager /></>, payouts: <PayoutManager /> };
 
 export default async function AdminSectionPage({ params }: { params: Promise<{ section: string }> }) {
   const { section } = await params;

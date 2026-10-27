@@ -3,6 +3,7 @@ export const adminLinks = [
   { label: "My wallet", href: "/admin/wallet", permission: "staff.wallet" },
   { label: "Orders & kitchen", href: "/admin/orders", permission: "orders.read" },
   { label: "Menu & products", href: "/admin/products", permission: "products.read" },
+  { label: "Delivery areas", href: "/admin/delivery-areas", permission: "settings.manage" },
   { label: "Customers", href: "/admin/customers", permission: "customers.read" },
   { label: "Marketing", href: "/admin/marketing", permission: "marketing.manage" },
   { label: "Coupons", href: "/admin/coupons", permission: "coupons.manage" },
